@@ -1,0 +1,119 @@
+/* The host screen (host.html): a 1280×720 stage, scaled to fill the window by
+   host.js. Sizes here are stage pixels. Game screens are in public/js/screens/
+   and reuse each game's stylesheet, with host-only pieces at the bottom here. */
+
+html.host { font-size: 20px; }
+html.host body { height: 100vh; overflow: hidden; display: grid; place-items: center; }
+
+.stage {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  padding: 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: hidden;
+}
+
+.hs-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+.hs-huge { font-size: 4.2rem; text-align: center; }
+.hs-note { margin: 0; font-size: 1.3rem; font-weight: 800; text-align: center; }
+.hs-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.hs-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 1rem; }
+.hs-prompt {
+  padding: 18px 28px;
+  text-align: center;
+  font: 700 2.2rem/1.2 var(--font-body);
+}
+.hs-waiting { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; min-height: 56px; }
+.hs-waiting .strip-player .avatar { font-size: 1.4rem; }
+.hs-say { font: 400 1.6rem var(--font-display); text-align: center; margin: 0; }
+.hs-say.on-bg { color: #fff; -webkit-text-stroke: .12em var(--ink); paint-order: stroke fill; }
+
+/* ---- lobby ------------------------------------------------------------------------ */
+
+.hs-lobby { flex: 1; display: grid; grid-template-columns: 500px 1fr; gap: 40px; align-items: center; }
+.hs-title { font-size: 4.2rem; white-space: nowrap; }
+.hs-join { padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; }
+.hs-url { font: 400 2.4rem var(--font-display); letter-spacing: .02em; margin-bottom: 6px; }
+.hs-join .code span { width: 84px; height: 96px; font-size: 3.4rem; }
+.hs-game { padding: 18px 24px; display: flex; flex-direction: column; gap: 4px; }
+.hs-game strong { font: 400 2rem var(--font-display); }
+.hs-game span { font-size: 1rem; opacity: .8; }
+.hs-status { margin: 8px 0 0; font-size: 1.05rem; font-weight: 900; }
+
+.hs-players { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 230px); gap: 18px; }
+.hs-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 12px; }
+.hs-slot.empty { border: 2.5px dashed rgba(255, 255, 255, .85); border-radius: var(--radius); background: rgba(255, 255, 255, .16); font: 400 1.1rem var(--font-display); color: #fff; text-shadow: 0 1px 3px rgba(0, 50, 110, .5); }
+.hs-slot.offline { opacity: .45; }
+.hs-slot .name { font: 400 1.5rem var(--font-display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar.hs-avatar { width: 120px; height: 120px; }
+.hs-vip { position: absolute; top: -16px; padding: 2px 12px; color: #6b4300; background: linear-gradient(180deg, #fff6b0, #ffc93a); border: 1px solid #e0a412; border-radius: 999px; box-shadow: var(--lift-sm); font: 400 1rem var(--font-display); }
+
+/* ---- results ------------------------------------------------------------------------ */
+
+.hs-results { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.hs-results .hs-col:first-child { align-items: center; }
+.hs-winners { display: flex; gap: 10px; }
+.avatar.hs-winner { width: 170px; height: 170px; animation: wobble 2.4s ease-in-out infinite; }
+.stage .leaderboard { font-size: 1.15rem; }
+
+/* ---- round intros and scoreboards (shared by games) -------------------------------- */
+
+.hs-intro { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; }
+.hs-intro .mega { font-size: 6rem; }
+.hs-intro .card { max-width: 800px; padding: 22px 30px; font-size: 1.6rem; }
+.hs-scores { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 40px; align-items: center; }
+.hs-scores .mega { font-size: 4.4rem; text-align: left; }
+
+/* ---- Trivia ------------------------------------------------------------------------ */
+
+.hs-math { font-size: 4.4rem; padding: 18px; }
+.hs-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.stage .option { font-size: 2.2rem; min-height: 86px; }
+.stage .option .pickers { font-size: 1rem; }
+.hs-free { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stage .free-answer .said { font-size: 1.8rem; }
+
+/* ---- Match to Hatch -------------------------------------------------------------- */
+
+.hs-mh-prompt { height: 120px; font-size: 2.2rem; }
+.hs-nest .mh-egg { --size: min(150px, 88cqi); }
+.hs-nest .mh-spot .name { font-size: 1.15rem; }
+.hs-groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.hs-groups .mh-group { min-width: 220px; }
+.hs-rules { padding: 16px 24px; font-size: 1.3rem; text-align: center; }
+.hs-hatch { flex: 1; justify-content: center; padding-top: 0; }
+.hs-hatch .mh-hatcher { width: 260px; height: 260px; }
+.hs-hatch .mh-hatcher .mh-egg { --size: 260px; }
+.hs-hatch .mh-hatchers.many .mh-hatcher, .hs-hatch .mh-hatchers.many .mh-hatcher .mh-egg { width: 180px; height: 180px; --size: 180px; }
+
+/* ---- Ego Check ---------------------------------------------------------------------- */
+
+.hs-prompt.small { padding: 12px 20px; font-size: 1.5rem; }
+.hs-ego-options { display: flex; justify-content: center; gap: 16px; }
+.hs-ego-options .option { flex: 1; max-width: 360px; justify-content: center; }
+.hs-ego-ask { font-size: 3.4rem; }
+.hs-ego-ask .ego-chip, .hs-say .ego-chip, .hs-prompt .ego-chip { font-size: .8em; max-width: none; -webkit-text-stroke: 0; }
+.hs-ego-who { display: block; font-size: 1.1rem; opacity: .75; }
+.hs-ego-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hs-ego-rows .ego-row .name { font-size: 1.4rem; }
+.hs-ego-rows .ego-row .ego-chip { font-size: 1.2rem; }
+.hs-read { font-size: .9rem; opacity: .75; white-space: nowrap; }
+.hs-gain { min-width: 3.5em; text-align: right; font: 400 1.3rem var(--font-display); }
+
+/* ---- Memory Draw -------------------------------------------------------------------- */
+
+.hs-gallery { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 18px; justify-content: center; }
+.hs-gallery.n2 { --cols: 2; padding: 0 160px; }
+.hs-gallery.n3 { --cols: 3; }
+.hs-gallery.n4 { --cols: 4; }
+.hs-gallery.n5, .hs-gallery.n6 { --cols: 3; }
+.hs-gallery.n7, .hs-gallery.n8 { --cols: 4; }
+.hs-entry { min-height: 0; justify-content: center; }
+/* the drawing takes whatever height the card has left */
+.hs-entry .dr-canvas { width: auto; height: 100%; max-height: 100%; max-width: 100%; align-self: center; min-height: 0; flex: 1; }
+.hs-entry .dr-letter { font-size: 1.4rem; padding: 0 14px; }
+.hs-entry .dr-stats { font-size: .9rem; }
+.hs-entry .dr-voters { display: inline-flex; gap: 2px; }

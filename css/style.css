@@ -1,0 +1,275 @@
+/* Shared look: Frutiger Aero. A blue sky of soft drifting light waves, frosted-glass
+   cards, aqua gel buttons and glossy orbs. Themes recolor the sky (setTheme in common.js). */
+
+:root {
+  --ink: #0b3a63; /* text and thin lines: deep navy */
+  --ink-soft: #2a5c86;
+  --paper: #f4fbff; /* solid near-white, for things that sit on glass */
+  --edge: rgba(255, 255, 255, .95); /* glass edges */
+  --line-soft: rgba(11, 58, 99, .22); /* hairlines on white */
+  --lift: 0 10px 28px rgba(0, 60, 120, .28);
+  --lift-sm: 0 3px 10px rgba(0, 60, 120, .25);
+  --sheen: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, 0));
+  --radius: 22px;
+  --font-display: "Fredoka", "Segoe UI", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", "Frutiger", "Myriad Pro", system-ui, sans-serif;
+  --font-face: "JetBrains Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace;
+  --opt-0: #ff6b70;
+  --opt-1: #ffd84d;
+  --opt-2: #5edc8a;
+  --opt-3: #b18cff;
+  --good: #5edc8a;
+  --bad: #ff6b70;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--ink);
+  background: #06205e;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- the sky --------------------------------------------------------------------------
+   Soft, wispy waves of light drifting across a blue gradient (built in common.js).
+   Each wave is a glowing edge with a faint sheet on one side; the sheets stack into
+   lighter bands where waves overlap. Themes recolor the whole scene by turning its
+   hues (the filter on .bg-layer and .scenery), blended over 1.6s. */
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .8s, filter 1.6s;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 45% at 70% 105%, rgba(90, 220, 255, .45), rgba(90, 220, 255, 0) 70%),
+    radial-gradient(ellipse 60% 40% at 15% -5%, rgba(10, 30, 120, .5), rgba(10, 30, 120, 0) 70%),
+    linear-gradient(180deg, #0b2f8e 0%, #1450b4 30%, #1d82d0 62%, #16abe2 100%);
+}
+.bg-layer.active { opacity: 1; }
+
+.scenery { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; transition: filter 1.6s; }
+
+/* each theme turns the scene's colors; the base look is blue. --bg-hue is the extra
+   turn you add by holding the background (common.js), on top of any theme. */
+:is(.bg-layer, .scenery) { filter: hue-rotate(var(--bg-hue, 0deg)); }
+body[data-theme="choice"] :is(.bg-layer, .scenery) { filter: hue-rotate(calc(18deg + var(--bg-hue, 0deg))); }
+body[data-theme="free"]   :is(.bg-layer, .scenery) { filter: hue-rotate(calc(-22deg + var(--bg-hue, 0deg))); }
+body[data-theme="mint"]   :is(.bg-layer, .scenery) { filter: hue-rotate(calc(-38deg + var(--bg-hue, 0deg))) saturate(1.1); }
+body[data-theme="good"]   :is(.bg-layer, .scenery) { filter: hue-rotate(calc(-55deg + var(--bg-hue, 0deg))) saturate(1.15); }
+body[data-theme="scores"] :is(.bg-layer, .scenery) { filter: hue-rotate(calc(48deg + var(--bg-hue, 0deg))); }
+body[data-theme="bad"]    :is(.bg-layer, .scenery) { filter: hue-rotate(calc(150deg + var(--bg-hue, 0deg))) saturate(1.1); }
+body[data-theme="hatch"]  :is(.bg-layer, .scenery) { filter: hue-rotate(calc(172deg + var(--bg-hue, 0deg))) saturate(1.15); }
+body[data-theme="night"]  :is(.bg-layer, .scenery) { filter: hue-rotate(var(--bg-hue, 0deg)) brightness(.55) saturate(.85); }
+
+/* while you're holding the background, colors follow your hold right away
+   instead of blending, and a long press doesn't select anything */
+body.hue-spin .bg-layer { transition: opacity .8s; }
+body.hue-spin .scenery { transition: none; }
+body.hue-spin { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Each wave is twice as wide as the screen (or wider on tall phones, so its curves
+   keep their shape) and slides by half its width per loop, which is seamless.
+   It also rises and falls a little on its own rhythm, so the bands between waves
+   keep swelling and thinning. */
+.wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: max(200%, 320vh);
+  overflow: visible;
+  will-change: transform;
+  animation: wave-slide var(--wt, 50s) linear infinite, wave-bob var(--wb, 12s) ease-in-out infinite alternate;
+}
+.wave.rev { animation-direction: reverse, alternate; }
+@keyframes wave-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes wave-bob { from { translate: 0 -3%; } to { translate: 0 3%; } }
+
+/* ---- glass and gloss building blocks -------------------------------------------------- */
+
+.card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .86), rgba(255, 255, 255, .58));
+  border: 1.5px solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: var(--lift), inset 0 1px 0 #fff, inset 0 -12px 24px rgba(120, 200, 255, .16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .4em;
+  padding: .32em .95em;
+  background: linear-gradient(180deg, #fff, #d9efff);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  box-shadow: var(--lift-sm), inset 0 -3px 6px rgba(80, 170, 240, .22);
+  font-family: var(--font-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+/* big headlines: white, with a blue raised edge and a soft glow */
+.outline-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 .035em 0 #2a9be6, 0 .07em 0 #0a6fc2, 0 .2em .45em rgba(0, 50, 120, .45), 0 0 .6em rgba(255, 255, 255, .45);
+  letter-spacing: .01em;
+  line-height: .98;
+  margin: 0;
+}
+
+/* gel buttons: aqua by default, green for "go", with a glossy top half */
+.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 40, 90, .55);
+  background: linear-gradient(180deg, #8be3ff 0%, #2aa6ec 48%, #0a73c9 52%, #1c95e2 100%);
+  border: 1px solid #0b5fa8;
+  border-radius: 999px;
+  padding: .6em 1.4em;
+  box-shadow: 0 6px 16px rgba(0, 80, 160, .4), inset 0 1px 0 rgba(255, 255, 255, .8);
+  cursor: pointer;
+  transition: transform .08s, box-shadow .08s, filter .15s;
+  touch-action: manipulation;
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 2px;
+  height: 46%;
+  border-radius: 999px;
+  background: var(--sheen);
+  opacity: .85;
+  z-index: -1;
+  pointer-events: none;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.06); }
+.btn:active:not(:disabled) { transform: translateY(2px) scale(.98); box-shadow: 0 2px 6px rgba(0, 80, 160, .4), inset 0 1px 0 rgba(255, 255, 255, .8); }
+.btn:disabled { opacity: .45; filter: saturate(.4); cursor: default; }
+.btn.go {
+  border-color: #2c7d12;
+  background: linear-gradient(180deg, #c8ff8a 0%, #6fd23a 48%, #3aa51c 52%, #5cc92e 100%);
+  box-shadow: 0 6px 16px rgba(40, 120, 20, .4), inset 0 1px 0 rgba(255, 255, 255, .8);
+  text-shadow: 0 1px 2px rgba(20, 70, 0, .55);
+}
+
+/* A player's icon: their ASCII face on a glossy orb of their color (--pc). The
+   face is sized from the orb and its length, so any avatar size works. */
+.avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  flex: none;
+  line-height: 1;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--pc, #9ab) 50%, #fff) 0%, var(--pc, #9ab) 45%, color-mix(in srgb, var(--pc, #9ab) 70%, #002) 100%);
+  border: 1px solid color-mix(in srgb, var(--pc, #9ab) 60%, #001);
+  box-shadow: 0 .12em .3em rgba(0, 50, 110, .35), inset 0 -.12em .25em color-mix(in srgb, var(--pc, #9ab) 40%, #fff);
+  container-type: size;
+  user-select: none;
+}
+.avatar::before { /* the orb's shine */
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 5%;
+  height: 42%;
+  border-radius: 50%;
+  background: var(--sheen);
+  pointer-events: none;
+}
+/* Faces use a monospace font so every character reads, even a lone . or _ */
+.avatar .face {
+  position: relative;
+  font: 800 50cqh/1 var(--font-face);
+  color: #fff;
+  white-space: pre;
+  text-transform: none; /* :p stays :p inside uppercase pills */
+  letter-spacing: -.04em;
+  text-shadow: 0 0 .06em rgba(0, 30, 70, .9), 0 .05em .08em rgba(0, 30, 70, .6);
+  transform: translateY(-2%);
+}
+.avatar .face[data-len="2"] { font-size: 44cqh; }
+.avatar .face[data-len="3"] { font-size: 34cqh; }
+.avatar.tiny { width: 1.9em; height: 1.9em; }
+.avatar.small { width: 2.3em; height: 2.3em; }
+
+.option-letter {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #fff, #d4ecff);
+  border: 1px solid var(--edge);
+  box-shadow: var(--lift-sm);
+  font-family: var(--font-display);
+  color: var(--ink);
+  text-shadow: none;
+}
+
+/* ---- animation ------------------------------------------------------------- */
+
+@keyframes pop {
+  0% { transform: scale(.4); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes rise {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes wobble {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+.pop { animation: pop .55s cubic-bezier(.2, .9, .3, 1.3) both; }
+.rise { animation: rise .45s cubic-bezier(.2, .9, .3, 1.2) both; }
+.d1 { animation-delay: .1s; }
+.d2 { animation-delay: .2s; }
+.d3 { animation-delay: .3s; }
+.d4 { animation-delay: .4s; }
+
+.conn-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -150%);
+  padding: .5em 1.2em;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(90, 0, 20, .5);
+  background: linear-gradient(180deg, #ffb0b4 0%, #ff5a62 48%, #d93a45 52%, #f0545e 100%);
+  border: 1px solid #a8222e;
+  border-radius: 999px;
+  box-shadow: var(--lift-sm);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  transition: transform .25s;
+  z-index: 10;
+}
+.conn-banner.show { transform: translate(-50%, 0); }

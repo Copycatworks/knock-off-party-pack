@@ -1,0 +1,149 @@
+/* Trivia screens (public/js/games/trivia.js). */
+
+.round-tag { font-size: 1.3rem; }
+
+.prompt {
+  padding: 14px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1.05;
+}
+.reveal-answer {
+  display: inline-block;
+  padding: 0 .3em;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(20, 70, 0, .5);
+  background: linear-gradient(180deg, #c8ff8a 0%, #6fd23a 48%, #3aa51c 52%, #5cc92e 100%);
+  border: 1px solid #2c7d12;
+  border-radius: 14px;
+  box-shadow: var(--lift-sm);
+}
+
+.timer { display: flex; align-items: center; gap: 10px; }
+/* the timer: a glossy glass track with a green gel fill (red when time's nearly up) */
+.timer-bar {
+  flex: 1;
+  height: 22px;
+  padding: 2px;
+  background: linear-gradient(180deg, rgba(0, 50, 100, .22), rgba(255, 255, 255, .55));
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(0, 50, 100, .35), var(--lift-sm);
+}
+.timer-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e2ffbf 0%, #6fd23a 50%, #3aa51c 56%, #5cc92e 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  transform-origin: left;
+}
+.timer-fill.urgent { background: linear-gradient(180deg, #ffd0d2 0%, #ff5a62 50%, #d93a45 56%, #f0545e 100%); }
+.timer-num {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 28%, #fff, #cbeaff);
+  border: 1px solid var(--edge);
+  box-shadow: var(--lift-sm);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.choices { display: flex; flex-direction: column; gap: 12px; }
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  text-align: left;
+  font-size: 1.9rem;
+  padding: 8px 16px;
+  text-transform: none;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
+  border-color: rgba(0, 40, 90, .35);
+  border-radius: 22px;
+}
+.choice .option-letter, .option .option-letter { font-size: 1.1rem; }
+
+.locked .answer {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  padding: 4px 22px;
+  border: 1.5px solid var(--edge);
+  border-radius: 16px;
+  box-shadow: var(--lift);
+}
+
+.verdict-row { display: flex; align-items: baseline; justify-content: center; gap: 14px; }
+.verdict { font-size: 3rem; }
+.points { font-family: var(--font-display); font-size: 2rem; }
+
+.options { display: flex; flex-direction: column; gap: 10px; }
+/* answer tiles are flat option colors with a glass sheen on top */
+.option, .locked .answer, .ego-chip, .reveal-answer { isolation: isolate; }
+.option::before, .locked .answer::before {
+  content: "";
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 2px;
+  height: 46%;
+  border-radius: 18px 18px 40% 40%;
+  background: var(--sheen);
+  opacity: .75;
+  z-index: -1;
+  pointer-events: none;
+}
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 6px 14px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  box-shadow: var(--lift);
+}
+.option .pickers { display: flex; gap: 4px; margin-left: auto; font-size: .8rem; }
+.option.wrong { opacity: .55; filter: grayscale(.6); transform: scale(.97); }
+.option.right { box-shadow: 0 0 0 3px #fff, 0 0 22px 6px rgba(255, 240, 150, .85), var(--lift); }
+.option.right .pickers { margin-right: 20px; } /* clear the ✓ badge */
+.option.right::after {
+  content: "✓";
+  position: absolute;
+  top: -12px;
+  right: -10px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 50% 25%, #d9ffb0, #5cc92e 55%, #2f9b1d);
+  border: 1px solid #2c7d12;
+  box-shadow: var(--lift-sm);
+  font-size: 1.1rem;
+}
+
+.free-answers { display: flex; flex-direction: column; gap: 8px; }
+.free-answer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  box-shadow: var(--lift);
+}
+.free-answer .name { font-family: var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.free-answer .said { margin-left: auto; font-family: var(--font-display); font-size: 1.4rem; }
+.free-answer .gain { min-width: 4.2em; text-align: right; }
+.free-answer.right { background: linear-gradient(180deg, #f2ffe0, #c4f29a); }
+.free-answer.wrong { background: linear-gradient(180deg, #fff3f3, #ffd0d2); }

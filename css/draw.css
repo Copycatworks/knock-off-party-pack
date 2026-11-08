@@ -1,0 +1,109 @@
+/* Memory Draw screens (public/js/games/draw.js). Uses .timer and .locked from trivia.css. */
+
+.dr-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 14px;
+  text-align: center;
+  font: 700 1.15rem/1.2 var(--font-body);
+}
+.dr-prompt .label { font-size: .75rem; opacity: .75; }
+.dr-prompt b { font: 400 1.8rem/1.1 var(--font-display); }
+
+/* the drawing pad: a white square */
+.dr-pad { width: 100%; max-width: 420px; align-self: center; }
+.dr-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #fff;
+  border: 1.5px solid var(--edge);
+  border-radius: 16px;
+  box-shadow: var(--lift);
+  touch-action: none; /* drawing, not scrolling */
+}
+.dr-pad.done { max-width: 200px; }
+
+.dr-tools { display: flex; flex-direction: column; gap: 8px; }
+.dr-colors { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.dr-color {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--sw) 55%, #fff), var(--sw) 45%, color-mix(in srgb, var(--sw) 75%, #002));
+  border: 1px solid rgba(0, 40, 90, .35);
+  border-radius: 50%;
+  box-shadow: var(--lift-sm);
+  cursor: pointer;
+}
+.dr-color::before { content: ""; position: absolute; left: 16%; right: 16%; top: 6%; height: 42%; border-radius: 50%; background: var(--sheen); }
+.dr-color.on { transform: scale(1.15); box-shadow: 0 0 0 2px #fff, 0 0 0 5px #2aa6ec, 0 0 12px 4px rgba(42, 166, 236, .45); }
+.dr-row { display: flex; align-items: center; gap: 6px; }
+.dr-row .btn { margin-left: auto; }
+.dr-row .btn + .btn { margin-left: 0; }
+.dr-size {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--paper);
+  border: 1.5px solid var(--edge);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.dr-size span { width: var(--d); height: var(--d); border-radius: 50%; background: var(--ink); }
+.dr-size.on { background: radial-gradient(circle at 50% 30%, #fff, #c9ecff); box-shadow: 0 0 0 3px #2aa6ec, 0 0 12px rgba(42, 166, 236, .5); }
+
+/* voting and results: drawings side by side */
+.dr-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dr-gallery.n3 > :last-child:nth-child(odd),
+.dr-gallery.n5 > :last-child:nth-child(odd),
+.dr-gallery.n7 > :last-child:nth-child(odd) { grid-column: span 2; justify-self: center; width: calc(50% - 5px); }
+.dr-entry {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  min-width: 0;
+}
+.dr-entry .dr-canvas { border-radius: 10px; box-shadow: none; }
+.dr-entry.picked { background: linear-gradient(180deg, #f2ffe0, #c4f29a); box-shadow: 0 0 0 3px #fff, 0 0 0 7px rgba(94, 220, 138, .7), var(--lift); }
+.dr-entry.mine { background: linear-gradient(180deg, #fffbe6, #ffe9a6); }
+.dr-entry.winner { background: linear-gradient(180deg, #f2ffe0, #c4f29a); box-shadow: 0 0 0 3px #fff, 0 0 24px 6px rgba(255, 240, 150, .8), var(--lift); }
+.dr-letter {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  z-index: 1;
+  padding: 0 10px;
+  background: var(--paper);
+  border: 1.5px solid var(--edge);
+  border-radius: 999px;
+  font: 400 1rem var(--font-display);
+}
+.dr-crown { position: absolute; top: -18px; right: -6px; z-index: 1; font-size: 1.8rem; }
+.dr-actions { display: flex; gap: 6px; }
+.dr-actions .dr-vote { flex: 1; }
+.dr-like { min-width: 48px; }
+.dr-like.on { border-color: #c48a00; background: linear-gradient(180deg, #fff3a0 0%, #ffd23f 48%, #f0b400 52%, #ffcf3a 100%); }
+
+.dr-artist { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dr-artist .name { font: 400 1.05rem var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-stats { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .9rem; }
+.dr-stats b { margin-left: auto; font: 400 1.1rem var(--font-display); }
+.dr-voters { display: flex; flex-wrap: wrap; gap: 3px; min-height: 0; }
+
+/* phone ballot: one big letter per drawing on the host screen */
+.dr-ballot { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dr-pick { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; }
+.dr-pick.picked { background: linear-gradient(180deg, #f2ffe0, #c4f29a); }
+.dr-pick.mine { background: linear-gradient(180deg, #fffbe6, #ffe9a6); }
+.dr-big-letter { font: 400 3rem/1 var(--font-display); }
+.dr-yours { font-weight: 900; opacity: .7; padding: 10px 0; }
+.dr-pick .dr-vote { width: 100%; }
+.dr-pick .dr-like { width: 100%; font-size: 1.2rem; }

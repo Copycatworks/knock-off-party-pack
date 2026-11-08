@@ -1,0 +1,227 @@
+/* Match to Hatch screens (public/js/games/match.js and screens/match.js).
+   Uses .prompt, .timer, .verdict and .locked from trivia.css. */
+
+/* Fixed height (room for 3 lines), so the timer and eggs below never move.
+   Bold body font rather than the display font: prompts are full sentences. */
+.mh-prompt {
+  display: grid;
+  place-items: center;
+  height: calc(3.6em + 28px);
+  font: 700 1.45rem/1.2 var(--font-body);
+}
+.mh-hidden { visibility: hidden; }
+/* The stage takes the leftover height, so the page (which centers its content)
+   keeps everything above pinned to the top. */
+.mh-stage { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---- the egg ------------------------------------------------------------------
+   --light (0-1) is cracks / cracks needed. It brightens the shell, the glow
+   around the egg and the light rays behind it. */
+
+.mh-egg {
+  --light: 0;
+  --size: 120px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  flex: none;
+}
+.mh-egg.tiny { --size: 46px; }
+.mh-egg > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.mh-shell {
+  filter:
+    brightness(calc(1 + var(--light) * .35))
+    drop-shadow(0 0 calc(var(--light) * var(--size) * .14) rgb(255 226 110 / calc(var(--light) * 100%)));
+}
+.mh-glow {
+  background: radial-gradient(circle, rgb(255 244 180 / .9), rgb(255 200 60 / .35) 40%, transparent 68%);
+  opacity: var(--light);
+  transform: scale(calc(.8 + var(--light) * .7));
+}
+/* light rays only once the egg is about half cracked */
+.mh-rays {
+  inset: -60%;
+  width: 220%;
+  height: 220%;
+  background: repeating-conic-gradient(rgb(255 236 150 / .55) 0 8deg, transparent 8deg 24deg);
+  mask-image: radial-gradient(circle, #000 10%, transparent 55%);
+  opacity: clamp(0, calc((var(--light) - .4) * 1.7), 1);
+  animation: spin 12s linear infinite;
+}
+
+.mh-cracks { overflow: visible; }
+.crack-outer { fill: var(--crack); }
+.crack-core { fill: var(--core); }
+/* when answers are scored, eggs that matched shake, then the new crack grows out
+   from where it branches off and the egg jolts */
+.mh-egg.gained { animation: egg-rattle .9s 1.2s ease-in-out, crack-jolt .35s 2.1s ease-out; transform-origin: 50% 90%; }
+.mh-cracks .new { transform: scale(0); animation: crack-grow .4s ease-out forwards; animation-delay: calc(2.1s + var(--i) * .35s); }
+.mh-count b { opacity: 0; animation: fade-in .3s 2.2s forwards; }
+
+@keyframes crack-grow { to { transform: scale(1); } }
+@keyframes crack-jolt {
+  30% { transform: scale(1.12, .9); }
+  65% { transform: scale(.95, 1.06); }
+}
+@keyframes egg-rattle {
+  0%, 100% { transform: rotate(0); }
+  10% { transform: rotate(-9deg); } 20% { transform: rotate(9deg); }
+  30% { transform: rotate(-11deg); } 40% { transform: rotate(11deg); }
+  50% { transform: rotate(-13deg); } 60% { transform: rotate(13deg); }
+  70% { transform: rotate(-9deg); } 80% { transform: rotate(7deg); }
+  90% { transform: rotate(-3deg); }
+}
+
+/* ---- screens ---------------------------------------------------------------------- */
+
+.mh-count { font: 400 1rem var(--font-display); }
+.mh-count b { color: #127a3a; }
+
+.locked .answer { background: var(--paper); }
+
+.mh-groups { display: flex; flex-direction: column; gap: 8px; }
+.mh-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  box-shadow: var(--lift);
+}
+.mh-group .said { font: 400 1.4rem var(--font-display); overflow-wrap: anywhere; }
+.mh-group .who { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; justify-content: flex-end; }
+.mh-group .gain { min-width: 3.2em; text-align: right; font-weight: 900; }
+.mh-group.matched { background: linear-gradient(180deg, #f2ffe0, #b9f08a); }
+.mh-group.alone { background: linear-gradient(180deg, rgba(255, 255, 255, .7), rgba(215, 232, 248, .75)); opacity: .8; }
+
+/* everyone's eggs; each egg fills its column (up to 130px) */
+.mh-nest { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 8px; }
+.mh-spot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 4px 6px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .86), rgba(255, 255, 255, .58));
+  border: 1.5px solid var(--edge);
+  border-radius: 18px;
+  box-shadow: var(--lift-sm), inset 0 1px 0 #fff;
+  container-type: inline-size;
+  transition: opacity .2s;
+}
+.mh-spot .mh-egg { --size: min(130px, 88cqi); }
+.mh-spot.me { background: linear-gradient(180deg, #fffbe6, #ffe9a6); }
+.mh-spot.offline { opacity: .4; }
+.mh-spot .name { font: 400 1rem var(--font-display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mh-spot.done::after {
+  content: "✓";
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 50% 25%, #d9ffb0, #5cc92e 55%, #2f9b1d);
+  border: 1.5px solid var(--edge);
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+/* ---- hatching ----------------------------------------------------------------------
+   One timeline: the egg shakes (0-2s), bursts in a flash (2-2.6s), the player pops
+   out with spinning rays (2.5s), then the winner banner and everyone else's eggs. */
+
+.mh-hatch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  text-align: center;
+}
+.burst.mh-burst { --ray: rgba(255, 210, 70, .5); position: fixed; opacity: 0; animation: spin 10s linear infinite, fade-in .5s 2.5s forwards; }
+.mh-flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: hatch-flash .9s 2.2s ease-out; z-index: 5; }
+.mh-hatchers { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+.mh-hatcher { position: relative; width: 170px; height: 170px; display: grid; place-items: center; }
+.mh-hatchers.many .mh-hatcher { width: 120px; height: 120px; }
+.mh-hatchers.many .mh-hatcher .mh-egg { --size: 120px; }
+.mh-hatcher .mh-egg { --size: 170px; position: absolute; inset: 0; animation: egg-shake 2s ease-in both, hatch-burst .6s 2s ease-in forwards; transform-origin: 50% 90%; }
+.mh-pet { position: absolute; inset: 0; opacity: 0; animation: hatchling-out .7s 2.5s cubic-bezier(.2, .9, .3, 1.4) forwards; }
+.mh-pet { display: grid; place-items: center; }
+.mh-pet .avatar.mh-hatchling { width: 78%; height: 78%; box-shadow: 0 12px 30px rgba(0, 40, 100, .45), 0 0 40px 10px rgba(255, 240, 160, .6); }
+
+/* the winner banner, and spinning light rays behind the hatching */
+.mh-msg {
+  margin: 0;
+  align-self: center;
+  padding: 6px 16px;
+  background: var(--paper);
+  border: 1.5px solid var(--edge);
+  border-radius: 999px;
+  box-shadow: var(--lift-sm);
+  font-weight: 900;
+  text-align: center;
+}
+.burst {
+  --ray: rgba(255, 255, 255, .35);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  margin: -80vmax 0 0 -80vmax;
+  background: repeating-conic-gradient(var(--ray) 0 10deg, transparent 10deg 20deg);
+  mask-image: radial-gradient(circle, #000 0, transparent 45%);
+  animation: spin 14s linear infinite;
+  z-index: -1;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes egg-shake {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(-4deg); } 20% { transform: rotate(4deg); }
+  30% { transform: rotate(0); } 45% { transform: rotate(-8deg); }
+  55% { transform: rotate(8deg); } 62% { transform: rotate(-10deg); }
+  70% { transform: rotate(10deg); } 76% { transform: rotate(-12deg); }
+  82% { transform: rotate(12deg); } 87% { transform: rotate(-14deg); }
+  92% { transform: rotate(14deg); } 96% { transform: rotate(-8deg); }
+  100% { transform: rotate(0); }
+}
+.mh-winner { opacity: 0; animation: fade-up .5s 2.9s forwards; }
+.mh-winner-sub { opacity: 0; animation: fade-up .5s 3.2s forwards; }
+.mh-rest { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; opacity: 0; animation: fade-up .5s 3.6s forwards; }
+.mh-rest-egg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  background: var(--paper);
+  border: 1.5px solid var(--edge);
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .85rem;
+}
+
+@keyframes hatch-burst {
+  0% { transform: scale(1); filter: brightness(1); opacity: 1; }
+  50% { transform: scale(1.2, .85); filter: brightness(2.5); }
+  100% { transform: scale(1.7); filter: brightness(8); opacity: 0; }
+}
+@keyframes hatch-flash { 0% { opacity: 0; } 25% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes hatchling-out {
+  0% { opacity: 0; transform: scale(.3) translateY(30px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes fade-in { to { opacity: 1; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+
+/* ---- phone: your own egg ------------------------------------------------------------ */
+
+.mh-me-egg { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.mh-egg.solo { --size: 170px; }
+.mh-me-egg .mh-count { font-size: 1.4rem; padding: 2px 14px; background: var(--paper); border: 1.5px solid var(--edge); border-radius: 999px; }
