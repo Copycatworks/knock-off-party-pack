@@ -36,7 +36,8 @@ html.host body { height: 100vh; overflow: hidden; display: grid; place-items: ce
 .hs-lobby { flex: 1; display: grid; grid-template-columns: 500px 1fr; gap: 40px; align-items: center; }
 .hs-title { font-size: 4.2rem; white-space: nowrap; }
 .hs-join { padding: 22px 26px; display: flex; flex-direction: column; gap: 8px; }
-.hs-url { font: 400 2.4rem var(--font-display); letter-spacing: .02em; margin-bottom: 6px; }
+/* one line, shrunk to fit the card when the address is long (fitText in host.js) */
+.hs-url { font: 400 2.4rem var(--font-display); letter-spacing: .02em; margin-bottom: 6px; white-space: nowrap; overflow: hidden; }
 .hs-join .code span { width: 84px; height: 96px; font-size: 3.4rem; }
 .hs-game { padding: 18px 24px; display: flex; flex-direction: column; gap: 4px; }
 .hs-game strong { font: 400 2rem var(--font-display); }

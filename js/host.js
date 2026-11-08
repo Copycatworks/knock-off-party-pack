@@ -88,8 +88,18 @@ const lobbyHtml = () => `
     <div class="hs-players rise d2" id="hs-players"></div>
   </div>`;
 
+/** Shrinks an element's text until it fits its width on one line (never bigger than its CSS size). */
+function fitText(el) {
+  el.style.fontSize = '';
+  const full = parseFloat(getComputedStyle(el).fontSize);
+  if (el.scrollWidth > el.clientWidth) el.style.fontSize = `${Math.floor(full * (el.clientWidth / el.scrollWidth) * 0.97)}px`;
+}
+
 function patchLobby(s) {
-  $('#hs-url').textContent = joinAddress(s);
+  const url = $('#hs-url');
+  url.textContent = joinAddress(s);
+  fitText(url);
+  document.fonts?.ready.then(() => url.isConnected && fitText(url)); // the display font may arrive after the first fit
   $('#hs-code').innerHTML = [...s.code].map((c) => `<span>${c}</span>`).join('');
   const game = s.games.find((g) => g.id === s.gameId);
   const vip = vipName(s);
