@@ -3,10 +3,15 @@ import { sanitizeDrawing } from '../../drawing.js';
 import { rankScores } from '../util.js';
 import { pickCharacters } from './draw-prompts.js';
 
+// Before drawing, each matchup is offered `options` characters, and everyone in it
+// ticks the ones they know (at least `need`). The matchup then draws the one the
+// most of them ticked, so nobody gets stuck drawing a character they've never seen.
 const ROUNDS = [
-  { title: 'Round 1', subtitle: 'Head to Head', headToHead: true, drawMs: 80000, votePoints: 100, winBonus: 250,
+  { title: 'Round 1', subtitle: 'Head to Head', headToHead: true, options: 3, need: 2, pickMs: 20000, drawMs: 80000,
+    votePoints: 100, winBonus: 250,
     intro: 'You and an opponent draw the same character from memory. Everyone else votes who got closer!' },
-  { title: 'Round 2', subtitle: 'Everybody Draws', headToHead: false, drawMs: 90000, votePoints: 150, winBonus: 500,
+  { title: 'Round 2', subtitle: 'Everybody Draws', headToHead: false, options: 5, need: 3, pickMs: 25000, drawMs: 90000,
+    votePoints: 150, winBonus: 500,
     intro: 'Everyone draws the same character from memory. Vote for the most accurate one!' },
 ];
 const TIMING = { roundIntro: 4500, scores: 6000 };
@@ -25,8 +30,8 @@ function shuffle(list) {
 }
 
 /**
- * Memory Draw: draw a well-known character from memory, then vote on whose
- * drawing is closest. Round 1 is head to head (a 3-way matchup when the player
+ * Memory Draw: tick which of a few characters you know, draw the one your matchup
+ * knows best from memory, then vote on whose drawing is closest. Round 1 is head to head (a 3-way matchup when the player
  * count is odd); round 2 everyone draws the same character. Anyone can also
  * give drawings a thumbs up for a few bonus points.
  */
@@ -35,9 +40,12 @@ class MemoryDraw {
     this.room = room;
     this.ids = [...room.players.keys()];
     this.scores = new Map(this.ids.map((id) => [id, 0]));
-    this.characters = pickCharacters(Math.ceil(this.ids.length / 2) + 1);
+    // Every character offered all game, all different: round 1's matchups first, then round 2's.
+    const pairs = Math.floor(this.ids.length / 2);
+    this.characters = pickCharacters(pairs * ROUNDS[0].options + ROUNDS[1].options);
     this.roundIndex = -1;
-    this.matchups = []; // [{ ids, prompt, order }]: order is the anonymous display order
+    this.matchups = []; // [{ ids, options, prompt, order }]: order is the anonymous display order
+    this.picks = new Map(); // playerId -> indexes of the options they know, this round
     this.matchIndex = -1;
     this.drawings = new Map(); // playerId -> strokes, this round
     this.done = new Set(); // players who finished drawing
@@ -68,6 +76,7 @@ class MemoryDraw {
   }
 
   playerLeft() {
+    if (this.phase === 'pick' && this.connectedIds().every((id) => this.picks.has(id))) this.endPicking();
     if (this.phase === 'draw' && this.connectedIds().every((id) => this.done.has(id))) this.endDrawing();
     if (this.phase === 'vote' && this.voters().every((id) => this.votes.has(id))) this.endVote();
   }
@@ -85,18 +94,36 @@ class MemoryDraw {
     this.roundIndex++;
     this.drawings.clear();
     this.done.clear();
+    this.picks.clear();
     this.matchIndex = -1;
+    const { options } = this.round;
     if (this.round.headToHead) {
       // Pairs, with a 3-way matchup when the count is odd.
       const order = shuffle(this.ids);
       const groups = [];
       for (let i = 0; i + 1 < order.length; i += 2) groups.push(order.slice(i, i + 2));
       if (order.length % 2) groups.at(-1).push(order.at(-1));
-      this.matchups = groups.map((ids, i) => ({ ids, prompt: this.characters[i], order: shuffle(ids) }));
+      this.matchups = groups.map((ids, i) => ({ ids, options: this.characters.slice(i * options, (i + 1) * options), prompt: null, order: shuffle(ids) }));
     } else {
-      this.matchups = [{ ids: [...this.ids], prompt: this.characters.at(-1), order: shuffle(this.ids) }];
+      this.matchups = [{ ids: [...this.ids], options: this.characters.slice(-options), prompt: null, order: shuffle(this.ids) }];
     }
-    this.setPhase('roundIntro', TIMING.roundIntro, () => this.startDrawing());
+    this.setPhase('roundIntro', TIMING.roundIntro, () => this.startPicking());
+  }
+
+  startPicking() {
+    this.setPhase('pick', this.round.pickMs, () => this.endPicking());
+  }
+
+  /** Each matchup draws the option the most of its players know (a random one of those, on a tie). */
+  endPicking() {
+    if (this.phase !== 'pick') return;
+    for (const m of this.matchups) {
+      const counts = m.options.map((_, i) => m.ids.filter((id) => this.picks.get(id)?.includes(i)).length);
+      const best = Math.max(...counts);
+      const top = m.options.filter((_, i) => counts[i] === best);
+      m.prompt = top[randomInt(top.length)];
+    }
+    this.startDrawing();
   }
 
   startDrawing() {
@@ -122,6 +149,15 @@ class MemoryDraw {
 
   input(playerId, data) {
     if (!this.scores.has(playerId)) return;
+    if (this.phase === 'pick' && data?.type === 'pick' && !this.picks.has(playerId)) {
+      const count = this.matchupOf(playerId)?.options.length ?? 0;
+      const picks = [...new Set(Array.isArray(data.picks) ? data.picks : [])].filter((i) => Number.isInteger(i) && i >= 0 && i < count);
+      if (picks.length < this.round.need) return;
+      this.picks.set(playerId, picks);
+      if (this.connectedIds().every((id) => this.picks.has(id))) this.endPicking();
+      else this.room.sync();
+      return;
+    }
     if (this.phase === 'draw' && (data?.type === 'drawing' || data?.type === 'done') && !this.done.has(playerId)) {
       this.drawings.set(playerId, sanitizeDrawing(data.strokes));
       if (data.type !== 'done') return; // saved for the deadline; nothing to show anyone yet
@@ -170,15 +206,19 @@ class MemoryDraw {
     const r = this.round;
     const m = this.matchup;
     const mine = this.matchupOf(playerId);
-    const timed = this.phase === 'draw' || this.phase === 'vote';
+    const timed = this.phase === 'pick' || this.phase === 'draw' || this.phase === 'vote';
     return {
       phase: this.phase,
-      round: r && { number: this.roundIndex + 1, total: ROUNDS.length, title: r.title, subtitle: r.subtitle, headToHead: r.headToHead, intro: r.intro },
+      round: r && { number: this.roundIndex + 1, total: ROUNDS.length, title: r.title, subtitle: r.subtitle, headToHead: r.headToHead, intro: r.intro, need: r.need },
       remainingMs: timed ? Math.max(0, this.deadline - Date.now()) : 0,
       timeMs: timed ? this.phaseMs : 0,
+      // picking which characters you know
+      options: this.phase === 'pick' ? mine?.options ?? null : null,
+      myPicks: this.picks.get(playerId) ?? null,
+      picked: [...this.picks.keys()],
       // drawing
       prompt: this.phase === 'draw' ? mine?.prompt ?? null : null,
-      opponents: this.phase === 'draw' && r.headToHead ? mine?.ids.filter((id) => id !== playerId) ?? [] : [],
+      opponents: (this.phase === 'pick' || this.phase === 'draw') && r.headToHead ? mine?.ids.filter((id) => id !== playerId) ?? [] : [],
       myDrawing: this.phase === 'draw' ? this.drawings.get(playerId) ?? [] : null,
       done: [...this.done],
       // voting and results

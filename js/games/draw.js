@@ -1,6 +1,6 @@
-// Memory Draw on a phone: the drawing pad, then letter buttons to vote on the
-// drawings shown on the host screen (public/js/screens/draw.js).
-// `s.game` is the view from server/games/draw.js.
+// Memory Draw on a phone: tick the characters you know, the drawing pad, then
+// letter buttons to vote on the drawings shown on the host screen (js/screens/draw.js).
+// `s.game` is the view from js/server/games/draw.js.
 import { $, esc, fmt, ordinal } from '../common.js';
 import { INK, SIZES, paintDrawing, paintStroke } from '../drawing.js';
 
@@ -84,6 +84,23 @@ const head = (left, right) => `
 
 const lookUp = (text) => `<div class="card panel center rise"><p class="big-msg">👀 Look at the screen!</p>${text ? `<p class="sub-msg">${text}</p>` : ''}</div>`;
 
+/** "vs ANNA" in head to head, or "Everyone draws this". */
+function versus(s, g) {
+  const players = byId(s);
+  return g.round.headToHead
+    ? `vs ${g.opponents.map((id) => esc(players.get(id)?.name ?? '?')).join(' & ')}`
+    : 'Everyone draws this';
+}
+
+/** The lock-in button's label and state, from how many characters are ticked. */
+function updatePickButton(form, need) {
+  const button = form?.querySelector('[type="submit"]');
+  if (!button) return;
+  const left = need - form.querySelectorAll('.check-row.on').length;
+  button.disabled = left > 0;
+  button.textContent = left > 0 ? `Tick ${left} more` : 'Lock in';
+}
+
 const SCREENS = {
   roundIntro: (s, g) => `
     <div class="center-stack">
@@ -92,11 +109,26 @@ const SCREENS = {
     </div>
     ${lookUp(esc(g.round.intro))}`,
 
+  // Tick the characters you could draw (at least round.need of them).
+  pick: (s, g) => `
+    ${head(`${versus(s, g)} · <span data-countdown></span>`, '🤫 Secret')}
+    ${g.myPicks ? `
+      <div class="card panel center locked rise">
+        <p class="big-msg">Locked in!</p>
+        <p class="sub-msg">You'll draw the one your ${g.round.headToHead ? 'matchup' : 'group'} knows best. Waiting for everyone else…</p>
+      </div>` : `
+      <form class="card panel dr-choose rise" id="pick-form" data-need="${g.round.need}">
+        <p class="ego-ask">Which of these could you draw from memory? Tick at least ${g.round.need}.</p>
+        <div class="check-list">${g.options.map((name, i) => `
+          <button type="button" class="check-row" data-action="draw-pick" data-i="${i}" aria-pressed="false">
+            <span class="name">${esc(name)}</span><span class="box"></span>
+          </button>`).join('')}
+        </div>
+        <button class="btn go wide" type="submit" disabled>Tick ${g.round.need} more</button>
+      </form>`}`,
+
   draw: (s, g) => {
-    const players = byId(s);
-    const vs = g.round.headToHead
-      ? `vs ${g.opponents.map((id) => esc(players.get(id)?.name ?? '?')).join(' & ')}`
-      : 'Everyone draws this';
+    const vs = versus(s, g);
     const done = g.done.includes(s.you.id);
     return `
       ${head(`${vs} · <span data-countdown></span>`, '🤫 Secret')}
@@ -160,6 +192,7 @@ export default {
 
   theme(s) {
     const g = s.game;
+    if (g.phase === 'pick') return 'mint';
     if (g.phase === 'draw') return 'choice';
     if (g.phase === 'vote') return 'free';
     if (g.phase === 'result') return g.matchup.result.find((r) => r.playerId === s.you.id)?.winner ? 'good' : 'scores';
@@ -168,7 +201,7 @@ export default {
   },
 
   // The screen is rebuilt only when this changes, so the drawing pad survives updates.
-  key: (s) => [s.game.phase, s.game.round?.number, s.game.matchup?.number, s.game.done.includes(s.you.id), s.game.myVote].join(':'),
+  key: (s) => [s.game.phase, s.game.round?.number, s.game.matchup?.number, s.game.done.includes(s.you.id), s.game.myVote, !!s.game.myPicks].join(':'),
 
   render: (s) => SCREENS[s.game.phase](s, s.game),
 
@@ -185,9 +218,21 @@ export default {
     });
   },
 
+  onSubmit(form, send) {
+    if (form.id !== 'pick-form') return;
+    const picks = [...form.querySelectorAll('.check-row.on')].map((b) => Number(b.dataset.i));
+    if (picks.length < Number(form.dataset.need)) return;
+    form.querySelector('[type="submit"]').disabled = true;
+    send({ type: 'pick', picks });
+  },
+
   onClick(action, el, send) {
     const i = Number(el.dataset.i);
-    if (action === 'draw-color') { pad.color = i; markTools(); }
+    if (action === 'draw-pick') {
+      el.setAttribute('aria-pressed', String(el.classList.toggle('on')));
+      const form = el.closest('form');
+      updatePickButton(form, Number(form.dataset.need));
+    } else if (action === 'draw-color') { pad.color = i; markTools(); }
     else if (action === 'draw-size') { pad.size = i; markTools(); }
     else if (action === 'draw-undo') {
       if (!pad.undo.length) return;

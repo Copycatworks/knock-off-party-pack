@@ -12,6 +12,10 @@
 .dr-prompt .label { font-size: .75rem; opacity: .75; }
 .dr-prompt b { font: 400 1.8rem/1.1 var(--font-display); }
 
+/* ticking which characters you know (reuses Ego Check's .check-row) */
+.dr-choose .check-row { padding: 10px 14px; }
+.dr-choose .check-row .name { font: 400 1.3rem/1.15 var(--font-display); white-space: normal; text-align: left; }
+
 /* the drawing pad: a white square */
 .dr-pad { width: 100%; max-width: 420px; align-self: center; }
 .dr-canvas {

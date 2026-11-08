@@ -1,5 +1,5 @@
-// Memory Draw on the host screen: who's drawing, the drawings to vote on, and
-// the results. s.game is the screenView() from server/games/draw.js.
+// Memory Draw on the host screen: who's picking and drawing, the drawings to vote
+// on, and the results. s.game is the screenView() from js/server/games/draw.js.
 import { esc, avatar, fmt } from '../common.js';
 import { paintDrawing } from '../drawing.js';
 import { byId, patchWaiting, roundIntro, scoreboard, timer, waiting } from './common.js';
@@ -26,6 +26,15 @@ const head = (g, right) => `
 
 const SCREENS = {
   roundIntro: (s, g) => roundIntro(g.round),
+
+  pick: (s, g) => `
+    ${head(g, 'Picking')}
+    <h1 class="outline-text hs-huge pop">Which ones do you know?</h1>
+    <p class="hs-say on-bg">${g.round.headToHead
+      ? 'Each matchup gets its own secret characters. On your phone, tick the ones you could draw. You’ll get the one your matchup knows best!'
+      : 'On your phone, tick the characters you could draw. Everyone gets the one the most of you know!'}</p>
+    ${timer()}
+    ${waiting()}`,
 
   draw: (s, g) => `
     ${head(g, 'Drawing')}
@@ -80,6 +89,7 @@ export default {
 
   theme(s) {
     const g = s.game;
+    if (g.phase === 'pick') return 'mint';
     if (g.phase === 'draw') return 'choice';
     if (g.phase === 'vote') return 'free';
     if (g.phase === 'result') return 'good';
@@ -96,6 +106,7 @@ export default {
   patch(s) {
     const g = s.game;
     paintGallery(s);
+    if (g.phase === 'pick') patchWaiting(s, g.picked);
     if (g.phase === 'draw') patchWaiting(s, g.done);
     if (g.phase === 'vote') patchWaiting(s, g.voted, g.voters);
   },
